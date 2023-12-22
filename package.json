@@ -6,12 +6,18 @@
   "scripts": {
     "start": "nodemon dist/index.js",
     "compile": "tsc",
-    "dev": "tsc && npm run start"
+    "dev": "tsc && npm run start",
+    "client": "node dist/client.js",
+    "server": "npm run start",
+    "buildServer": "cd dist && nexe index.js -r ./server.js -r ./types.js --build -o server",
+    "buildClient": "cd dist && nexe client.js -r ./game.js -r ./types.js --build -o client"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "nodegamesjs": "^1.1.3",
     "nodemon": "^3.0.2",
+    "readme-md-generator": "^1.0.0",
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2"
   }

@@ -2,21 +2,24 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 // client.ts
 const socket_io_client_1 = require("socket.io-client");
-const serverUrl = "http://127.0.0.1:5555"; // Replace with your server's IP and port
-// Connect to the server
+const game_1 = require("./game");
+const serverUrl = "http://127.0.0.1:5555";
 const socket = (0, socket_io_client_1.io)(serverUrl);
-// Handle connection event
+let game = new game_1.Game(socket);
 socket.on("connect", () => {
-    console.log("Connected to the server");
-    // Send a message to the server
-    console.log("Sending: Hello, server!");
-    socket.emit("message", "Hello, server!");
+    console.log("Connected to the server & sending init");
+    let init = {
+        _id: game.getPlayerId(),
+        pos: game.getPlayerPosition(),
+        socket_id: socket.id
+    };
+    socket.emit("initMessage", JSON.stringify(init));
 });
-// Handle message event from the server
-socket.on("message", (msg) => {
-    console.log("Received from server:", msg);
+socket.on("playersUpdate", (msg) => {
+    game.setPlayers(JSON.parse(msg));
+    console.log(game.getPlayers());
 });
-// Handle disconnection event
 socket.on("disconnect", () => {
     console.log("Disconnected from the server");
+    game.getPlayersUpdate();
 });
