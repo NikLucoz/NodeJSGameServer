@@ -9,8 +9,8 @@
     "dev": "tsc && npm run start",
     "client": "node dist/client.js",
     "server": "npm run start",
-    "buildServer": "cd dist && nexe index.js -r ./server.js -r ./types.js --build -o server",
-    "buildClient": "cd dist && nexe client.js -r ./game.js -r ./types.js --build -o client"
+    "buildServer": "tsc && cd dist && nexe index.js -r ./server.js -r ./types.js --build -o ../bin/server",
+    "buildClient": "tsc && cd dist && nexe client.js -r ./game.js -r ./types.js --build -o ../bin/client"
   },
   "author": "",
   "license": "ISC",

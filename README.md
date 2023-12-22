@@ -9,7 +9,7 @@
 
 👤 **Niccolò Lucozzi**
 
-* Website: niklucoz.github.io
+* Website: https://niklucoz.github.io
 * Github: [@NikLucoz](https://github.com/NikLucoz)
 
 ## Show your support
