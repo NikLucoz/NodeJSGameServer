@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { playerData } from "./types";
+import { movementData, playerData } from "./types";
 
 /**
  * Classe che rappresenta il server del gioco.
@@ -37,15 +37,33 @@ export class GameServer {
      * Aggiorna i dati del giocatore.
      * @param updatedPlayer Dati aggiornati del giocatore.
      */
-    private updatePlayer(updatedPlayer: playerData): void {
+    private updatePlayer(updatedPlayer: movementData): void {
         const existingPlayerIndex = this.players.findIndex(player => player._id === updatedPlayer._id);
         if (existingPlayerIndex !== -1) {
-            // Sostituisci il giocatore esistente con i nuovi dati del giocatore.
-            this.players.splice(existingPlayerIndex, 1, updatedPlayer);
-        } else {
-            // Aggiungi un nuovo giocatore se non esiste già.
-            this.players.push(updatedPlayer);
+            let pos = this.players[existingPlayerIndex].pos;
+            switch (updatedPlayer.key) {
+                case "w":
+                    pos[1] -= 10;
+                    break;
+                case "a":
+                    pos[0] -= 10;
+                    break;
+                case "s":
+                    pos[1] += 10;
+                    break;
+                case "d":
+                    pos[0] += 10;
+                    break;
+            }
+            let data: playerData = {_id: updatedPlayer._id, socket_id: this.players[existingPlayerIndex].socket_id, pos: pos} 
+            this.players.splice(existingPlayerIndex, 1, data);
+            this.server.emit("playersUpdate", this.removeInactivePlayers());
         }
+    }
+
+    private removeInactivePlayers(): playerData[] {
+        this.players = this.players.filter(player => this.socketsOpen.includes(player.socket_id));
+        return this.players;
     }
 
     /**
@@ -57,22 +75,26 @@ export class GameServer {
 
         // Gestisce il messaggio di movimento inviato dal client.
         socket.on("movement", (msg: string) => {
-            let message: playerData = JSON.parse(msg);
-            console.log("Player " + message._id + " moved to " + message.pos);
+            let message: movementData = JSON.parse(msg);
             this.updatePlayer(message);
         });
 
         // Gestisce il messaggio di inizializzazione inviato dal client.
         socket.on("initMessage", (msg: string) => {
             let message: playerData = JSON.parse(msg);
-            console.log("Client " + message._id + " configured");
+            console.log("Client " + message._id + " initialized");
             this.socketsOpen.push(message.socket_id.toString());
-            console.log(this.socketsOpen);
             if (message._id >= 0) this.players.splice(message._id, 0, message);
+            this.server.emit("playersUpdate", JSON.stringify(this.removeInactivePlayers()));
         });
 
         // Gestisce la disconnessione del client.
         socket.on("disconnect", () => {
+            let socketIndex = this.socketsOpen.findIndex(sock => sock === socket.id);
+            this.socketsOpen.slice(socketIndex, 1);
+            const existingPlayerIndex = this.players.findIndex(player => player.socket_id === socket.id);
+            this.players.splice(existingPlayerIndex, 1);
+            this.server.emit("playersUpdate", JSON.stringify(this.removeInactivePlayers()));
             console.log("Client disconnected");
         });
 
@@ -83,11 +105,12 @@ export class GameServer {
             this.players.splice(existingPlayerIndex, 1);
             let socketIndex = this.socketsOpen.findIndex(socket => socket === message.socket_id);
             this.socketsOpen.slice(socketIndex, 1);
+            this.server.emit("playersUpdate", JSON.stringify(this.removeInactivePlayers()));
             socket.disconnect();
         });
 
         // Gestisce la richiesta di aggiornamento dei giocatori inviata dal client.
-        socket.on("getPlayersUpdate", (msg: string) => {
+        /*socket.on("getPlayersUpdate", (msg: string) => {
             let message: playerData = JSON.parse(msg);
 
             // Filtra i giocatori che hanno un ID diverso da quello ricevuto.
@@ -99,5 +122,6 @@ export class GameServer {
             // Invia agli altri giocatori l'aggiornamento dei giocatori.
             socket.emit("playersUpdate", JSON.stringify(updatedPlayers));
         });
+        */
     }
 }

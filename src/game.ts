@@ -1,8 +1,6 @@
-import { playerData } from "./types";
+import { movementData, playerData } from "./types";
 import { Socket } from "socket.io-client";
 const nodegames = require("nodegamesjs");
-const { exit } = require('node:process');
-
 /**
  * Classe che rappresenta il gioco lato client.
  */
@@ -27,67 +25,34 @@ export class Game {
         
         // Creazione del gioco utilizzando la libreria nodegamesjs.
         this.game = nodegames.newGame(async (game: any) => {
-            game.setWindowName("IRS");
+            game.setWindowName("IRS Client Test");
 
             // Gestisce l'evento di chiusura del gioco e disconnessione dal server.
             game.on("close", () => {
+                socket.emit("closeConnection", JSON.stringify({ _id: this.playerId, pos: this.position, socket_id: this.socket.id }))
                 socket.disconnect();
                 process.exit(0);
             });
 
             while (true) {
-                // Invia l'aggiornamento della posizione del giocatore al server.
-                socket.emit("getPlayersUpdate", JSON.stringify({ _id: this.playerId, pos: this.position }));
-
                 // Gestisce l'evento di pressione di un tasto e invia il movimento al server.
                 game.on("keypress", (event: any) => {
                     let key = event.key;
-                    let pos: Array<number> = this.move(key);
-                    let newData: playerData = { _id: this.playerId, pos: pos, socket_id: this.socket.id };
-                    socket.emit("movement", JSON.stringify(newData));
+                    let data: movementData = {key: key, _id: this.playerId};
+                    socket.emit("movement", JSON.stringify(data));
                 });
-
+                
                 // Disegna gli elementi del gioco.
                 this.draw(game);
-
-                // Gestisce l'evento di chiusura del gioco e disconnessione dal server.
-                game.on("close", () => {
-                    socket.emit("closeConnection", JSON.stringify({ _id: this.playerId, pos: this.position, socket_id: this.socket.id }))
-                    exit();
-                });
-
+                
                 // Rende il frame del gioco.
                 game.renderFrame();
-
                 // Attendere 1 millisecondo prima del prossimo ciclo.
                 await new Promise((resolve, reject) => {
                     setTimeout(resolve, 1)
                 });
             }
         }, 400, 400);
-    }
-
-    /**
-     * Muove il giocatore in base al tasto premuto.
-     * @param key Tasto premuto.
-     * @returns Nuova posizione del giocatore.
-     */
-    private move(key: any): Array<number> {
-        switch (key) {
-            case "w":
-                this.position[1] -= 10;
-                break;
-            case "a":
-                this.position[0] -= 10;
-                break;
-            case "s":
-                this.position[1] += 10;
-                break;
-            case "d":
-                this.position[0] += 10;
-                break;
-        }
-        return this.position;
     }
 
     /**
@@ -118,6 +83,8 @@ export class Game {
      */
     public setPlayers(players: playerData[]) { this.players = players; }
 
+    public setPlayerPos(data: playerData): void { this.position = data.pos; }
+
     /**
      * Restituisce l'ID del giocatore.
      * @returns ID del giocatore.
@@ -129,11 +96,4 @@ export class Game {
      * @returns Lista dei giocatori.
      */
     public getPlayers(): playerData[] { return this.players; }
-
-    /**
-     * Invia una richiesta di aggiornamento dei giocatori al server.
-     */
-    public getPlayersUpdate(): void {
-        this.socket.emit("getPlayersUpdate", JSON.stringify({ _id: this.playerId, pos: this.position }));
-    }
 }

@@ -3,3 +3,8 @@ export type playerData = {
     pos: Array<number>,
     socket_id: string,
 }
+
+export type movementData = {
+    key: string,
+    _id: number,
+}

@@ -3,7 +3,7 @@ import { playerData } from "./types";
 import { Game } from "./game";
 
 // URL del server
-const serverUrl: string = "http://127.0.0.1:5555";
+const serverUrl: string = "http://192.168.0.19:5555";
 
 // Inizializza una connessione al server
 const socket: Socket = io(serverUrl);
@@ -29,8 +29,13 @@ socket.on("connect", () => {
 // Gestisce l'evento di aggiornamento dei giocatori dal server
 socket.on("playersUpdate", (msg: string) => {
     // Aggiorna la lista dei giocatori nel gioco
-    game.setPlayers(JSON.parse(msg));
-    console.log(game.getPlayers());
+    let players: playerData[] = JSON.parse(msg);
+    const existingPlayerIndex = players.findIndex(player => player._id === game.getPlayerId());
+    game.setPlayerPos(players[existingPlayerIndex]);
+    let updatedPlayers: playerData[] = players.filter(player => player._id !== game.getPlayerId());
+
+    game.setPlayers(updatedPlayers);
+    //console.log(game.getPlayers());
 });
 
 // Gestisce l'evento di disconnessione dal server
@@ -38,5 +43,4 @@ socket.on("disconnect", () => {
     console.log("Disconnected from the server");
 
     // Richiede un aggiornamento dei giocatori al server dopo la disconnessione
-    game.getPlayersUpdate();
 });
