@@ -1,15 +1,18 @@
 import { Socket, io } from "socket.io-client";
-import { playerData } from "./types";
+import { globes, playerData } from "./types";
 import { Game } from "./game";
 
 // URL del server
-const serverUrl: string = "http://192.168.0.19:5555";
+const serverUrl: string = "http://192.168.0.245:5555";
 
 // Inizializza una connessione al server
 const socket: Socket = io(serverUrl);
 
+const windowWidth: number = 800;
+const windowHeight: number = 800;
+
 // Crea un'istanza del gioco e passa il socket come parametro
-let game = new Game(socket);
+let game = new Game(socket, windowWidth, windowHeight);
 
 // Gestisce l'evento di connessione al server
 socket.on("connect", () => {
@@ -19,7 +22,8 @@ socket.on("connect", () => {
     let init: playerData = {
         _id: game.getPlayerId(),
         pos: game.getPlayerPosition(),
-        socket_id: socket.id
+        socket_id: socket.id,
+        points: 10
     };
 
     // Invia il messaggio di inizializzazione al server
@@ -31,16 +35,19 @@ socket.on("playersUpdate", (msg: string) => {
     // Aggiorna la lista dei giocatori nel gioco
     let players: playerData[] = JSON.parse(msg);
     const existingPlayerIndex = players.findIndex(player => player._id === game.getPlayerId());
-    game.setPlayerPos(players[existingPlayerIndex]);
+    game.setPlayerData(players[existingPlayerIndex]);
     let updatedPlayers: playerData[] = players.filter(player => player._id !== game.getPlayerId());
 
     game.setPlayers(updatedPlayers);
-    //console.log(game.getPlayers());
 });
+
+socket.on("globesUpdate", (msg: string) => {
+    let message: Array<globes> = JSON.parse(msg);
+    console.log(message);
+    game.setGlobes(message);
+})
 
 // Gestisce l'evento di disconnessione dal server
 socket.on("disconnect", () => {
     console.log("Disconnected from the server");
-
-    // Richiede un aggiornamento dei giocatori al server dopo la disconnessione
 });
